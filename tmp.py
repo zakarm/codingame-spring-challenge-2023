@@ -1,3 +1,4 @@
+# -------------------------------* IMPORT *-------------------------------
 from collections import deque
 import sys
 
@@ -18,6 +19,7 @@ class Cell(object):
         self.my_ants = my_ants
         self.opp_ants = opp_ants
 
+# -------------------------------* GAME CLASS *-------------------------------
 class Game(object):
     cells: list[Cell] = []
 
@@ -41,7 +43,7 @@ class Game(object):
 
     def count_eggs(self):
         return sum(1 for cell in self.cells if cell.cell_type == 1)
-
+    
     def bfs(self, start_index, target_type):
         visited = set()
         queue = deque([(start_index, [start_index])])
@@ -59,6 +61,22 @@ class Game(object):
                 if neighbor_index not in visited:
                     queue.append((neighbor_index, path + [neighbor_index]))
         return list(paths.values())
+    
+    def get_safe_part(self,base ,dist_bet_bases, target_type):
+        paths = game.bfs(base, target_type)
+        safe_paths = []
+        for path in paths:
+            if  len(path) < dist_bet_bases // 2:
+                safe_paths.append(path)
+        return safe_paths
+    
+    def get_middle_part(self, base, dist_bet_bases, target_type):
+        paths = game.bfs(base, target_type)
+        safe_paths = []
+        for path in paths:
+            if  len(path) <= round(dist_bet_bases / 2):
+                safe_paths.append(path)
+        return safe_paths 
 
 
 # -------------------------------* INFOS *-------------------------------
@@ -96,14 +114,31 @@ for i in input().split():
     opp_bases.append(opp_base_index)
 
 
+# -------------------------------* GLOBAL VARIABLES *-------------------------------
 cry_init = sum(cell.resources for cell in game.cells if cell.cell_type == 2)
 eggs_init = sum(cell.resources for cell in game.cells if cell.cell_type == 1)
 
-# cry_coll =
-# eggs_coll =
+
 
 # -------------------------------* GAME LOOP *-------------------------------
+
+
+if len(my_bases) == 2:
+    game.cells[opp_bases[0]].cell_type = -1
+    dist_1 = len(game.bfs(my_bases[1], -1)[0])
+    print(game.bfs(my_bases[1], -1)[0], file = sys.stderr)
+
+    game.cells[opp_bases[1]].cell_type = -2
+    dist_2 = len(game.bfs(my_bases[0], -2)[0])
+    print(game.bfs(my_bases[0], -2)[0], file = sys.stderr)
+    
+else :
+    game.cells[opp_bases[0]].cell_type = -1
+    dist_1 = len(game.bfs(my_bases[0], -1)[0])
+
+
 while True:
+    # ******** Init Cells ********
     myScore, oppScore = map(int, input().split())
     for i in range(number_of_cells):
         inputs = [int(j) for j in input().split()]
@@ -113,90 +148,80 @@ while True:
         game.cells[i].resources = resources
         game.cells[i].my_ants = my_ants
         game.cells[i].opp_ants = opp_ants
+
+    # ******** Implementation ********
     actions = []
-
-    for base in my_bases:
-        percent = 0.8
-
-        boolean = False
-        for cell in game.cells:
+    for index, base in enumerate(my_bases):
+        for cell in cells:
             if cell.resources == 0:
                 cell.cell_type = 0
-        for nei in game.cells[base].neighbors:
-            for k in game.cells[nei].neighbors:
-                if game.cells[k].cell_type == 1 and game.cells[k].resources :#and round(eggs_init * 0.20) > (game.sum_my_ants() - 10):
-                    actions.append(f"LINE {base} {game.cells[k].index} 3")
-                    boolean = True
-                elif game.cells[nei].resources == 0:
-                    game.cells[nei].cell_type = 0
-        if round(eggs_init * 0.20) > (game.sum_my_ants() - 10) and boolean == False:
-            # print(f"{round(eggs_init * 0.15)} {game.sum_my_ants() - 10}", file = sys.stderr)
-            if len(my_bases) == 2:
-                paths = game.bfs(base, 1)
-                len_pi = game.count_eggs() / 4
-                for i in range(round(len_pi)):
-                    if i in range(len(paths)):
-                        if game.cells[paths[i][-1]].resources :
-                            actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                        else :
-                            game.cells[paths[i][-1]].cell_type = 0
-            else :
-                paths = game.bfs(base, 1)
-                len_pi = game.count_eggs() / 2
-                print(f"{len_pi}", file=sys.stderr)
-                for i in range(round(len_pi)):
-                    if i in range(len(paths)):
-                        if game.cells[paths[i][-1]].resources:
-                            actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                        else :
-                            game.cells[paths[i][-1]].cell_type = 0
-        if len(actions) == 0:
-            if len(my_bases) == 2:
-                paths = game.bfs(base, 2)
-                count_cry_2 = game.count_cry() / 4
-                if paths:
-                    for i in range(round(count_cry_2)):
-                        if i in range(len(paths)):
-                            if game.cells[paths[i][-1]].resources and game.cells[paths[i][-1]].cell_type == 2:
-                                actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                            elif game.cells[paths[i][-1]].resources == 0 :
-                                game.cells[paths[i][-1]].cell_type = 0
-                if count_cry_2 > 1:
-                    paths = game.bfs(base, 1)
-                    len_pi = game.count_eggs() / 1.5
-                    for i in range(round(len_pi)):
-                        if i in range(len(paths)):
-                            if game.cells[paths[i][-1]].resources:
-                                actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                            else :
-                                game.cells[paths[i][-1]].cell_type = 0
-            else :
-                paths = game.bfs(base, 2)
-                if game.count_cry() == 3:
-                    count_cry_2 = game.count_cry() / 3
-                elif game.count_cry() == 2:
-                    count_cry_2 = game.count_cry() / 2
-                elif game.count_cry() == 1:
-                    count_cry_2 = game.count_cry()
-                else :
-                    count_cry_2 = game.count_cry() / 4
-                if paths:
-                    for i in range(round(count_cry_2)):
-                        if i in range(len(paths)):
-                            if game.cells[paths[i][-1]].resources and game.cells[paths[i][-1]].cell_type == 2:
-                                actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                            elif game.cells[paths[i][-1]].resources == 0 :
-                                game.cells[paths[i][-1]].cell_type = 0
-                if count_cry_2 > 1:
-                    paths = game.bfs(base, 1)
-                    len_pi = game.count_eggs() / 3
-                    for i in range(round(len_pi)):
-                        if i in range(len(paths)):
-                            if game.cells[paths[i][-1]].resources:
-                                actions.append(f"LINE {base} {game.cells[paths[i][-1]].index} 1")
-                            else :
-                                game.cells[paths[i][-1]].cell_type = 0
+        if round(eggs_init * 0.10) > (game.sum_my_ants() - 10) :
+            if index == 0:
+                safe_path = game.get_safe_part(base, dist_1, 1)
+            else:
+                safe_path = game.get_safe_part(base, dist_2, 1)
+            for path in safe_path:
+                if game.cells[path[-1]].resources :
+                    actions.append(f"LINE {base} {path[-1]} 1")
+                else:
+                    game.cells[path[-1]].cell_type = 0
 
+        if len(actions) == 0:
+            if index == 0:
+                mid_path = game.get_middle_part(base, dist_1, 1)
+                safe_path = game.get_safe_part(base, dist_1, 1)
+            else:
+                mid_path = game.get_middle_part(base, dist_2, 1)
+                safe_path = game.get_safe_part(base, dist_2, 1)
+
+            mid_part = []
+            for middle in mid_path:
+                if middle not in safe_path:
+                    mid_part.append(middle)
+                    
+            if index == 0:
+                safe_path = game.get_safe_part(base, dist_1, 2)
+            else:
+                safe_path = game.get_safe_part(base, dist_2, 2)
+
+            for path in safe_path:
+                if game.cells[path[-1]].resources :
+                    actions.append(f"LINE {base} {path[-1]} 1")
+                else:
+                    game.cells[path[-1]].cell_type = 0
+            if len(actions) == 0:
+                if index == 0:
+                    mid_path = game.get_middle_part(base, dist_1, 2)
+                    safe_path = game.get_safe_part(base, dist_1, 2)
+                else:
+                    mid_path = game.get_middle_part(base, dist_2, 2)
+                    safe_path = game.get_safe_part(base, dist_2, 2)
+                mid_part = []
+                for middle in mid_path:
+                    if middle not in safe_path:
+                        mid_part.append(middle)
+                for path in mid_part:
+                    if game.cells[path[-1]].resources :
+                        actions.append(f"LINE {base} {path[-1]} 1")
+                    else:
+                        game.cells[path[-1]].cell_type = 0
+
+
+            for path in mid_part:
+                if game.cells[path[-1]].resources :
+                    actions.append(f"LINE {base} {path[-1]} 1")
+                else:
+                    game.cells[path[-1]].cell_type = 0
+            print(len(actions), file = sys.stderr)
+
+        if len(actions) == 0:
+            paths = game.bfs(base, 2)
+            for path in range(len(paths)):
+                if game.cells[paths[path][-1]].resources :
+                    actions.append(f"LINE {base} {paths[path][-1]} 1")
+                else:
+                    game.cells[paths[path][-1]].cell_type = 0
+    
     if len(actions) == 0:
         print("WAIT")
     else:
