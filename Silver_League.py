@@ -96,6 +96,8 @@ for i in input().split():
     opp_bases.append(opp_base_index)
 
 
+
+
 c = sum(cell.resources for cell in game.cells if cell.cell_type == 2)
 d = sum(cell.resources for cell in game.cells if cell.cell_type == 1)
 
